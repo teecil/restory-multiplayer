@@ -32,7 +32,7 @@ namespace RestoryVersus
     public sealed class Plugin : BaseUnityPlugin
     {
         public const string Guid = "coopanything.restory.versus";
-        public const string Version = "0.13.1";
+        public const string Version = "0.13.2";
 
         internal static ManualLogSource Log;
         internal static Plugin Instance { get; private set; }
@@ -50,6 +50,7 @@ namespace RestoryVersus
         private ConfigEntry<float> cfgResetPenalty;
         private ConfigEntry<string> cfgAvatar;
         private ConfigEntry<bool> cfgContestShadows;
+        private ConfigEntry<bool> cfgCoopBarNoticesOnly;
 
         private readonly Stopwatch clock = Stopwatch.StartNew();
         private NetTransport transport;
@@ -97,7 +98,7 @@ namespace RestoryVersus
             cfgName = Config.Bind("Player", "Name", "Player", "Name shown to the opponent.");
             cfgPort = Config.Bind("Network", "Port", 27515, "UDP port the host listens on.");
             // The default is the tested route; Steam has not been tried with real Steam accounts yet.
-            cfgRoute = Config.Bind("Network", "Route", "ip", "How the menu connects players: ip (address and port) or steam (invite a Steam friend; not tested with real Steam yet).");
+            cfgRoute = Config.Bind("Network", "Route", "ip", "How the menu connects players: ip (the host's IP) or steam (invite a Steam friend; not tested with real Steam yet).");
             SteamNet.ReadLaunchArgs();
             // Tests pick the route: -versus-route ip|steam (test bots press the menu's own buttons).
             // Two copies side by side on one screen (the owner's Test.bat): -versus-window 640x360 keeps this copy in a
@@ -113,6 +114,7 @@ namespace RestoryVersus
             if (routeArg == "ip" || routeArg == "steam") cfgRoute.Value = routeArg;
             cfgAvatar = Config.Bind("Player", "Avatar", "", "Avatar: id of one of the game's profile icons.");
             cfgContestShadows = Config.Bind("Visual", "ContestShadows", false, "Keep the contest's neon shadows in versus races (the contest rug is kept either way).");
+            cfgCoopBarNoticesOnly = Config.Bind("Visual", "CoopBarNoticesOnly", false, "Show the co-op bar at the top only when it has a notice (waiting, pause, a lost connection, ...).");
             cfgResetPenalty = Config.Bind("Race", "ResetPenaltySeconds", 5f, "Seconds added to the final time for each device reset (a dropped part that missed its socket).");
 
             racerName = Arg("-versus-name") ?? cfgName.Value;
@@ -680,6 +682,7 @@ namespace RestoryVersus
                 coopBotStep = 16;
                 if (s.IsHost) { CoopPause.BotPaused = true; Log.LogInfo("co-op bot: pause menu opened"); }
                 if (s.IsHost) StartCoroutine(SessionPageShot());
+                if (!s.IsHost) StartCoroutine(BotCoopBar());
             }
             else if (coopBotStep == 16 && t > 93f)
             {
@@ -735,6 +738,23 @@ namespace RestoryVersus
             yield return new WaitForSecondsRealtime(1.2f);
             yield return CoopShot(Path.Combine(dataDir, "coop_session.png"));
             menu?.BotSessionPage(false);
+        }
+
+        // Test bot (guest): "top bar only with notices" on; the bar must show while the host is paused (a notice)
+        // and hide once the pause is over; the bar names the other player with its role.
+        private System.Collections.IEnumerator BotCoopBar()
+        {
+            bool before = CoopBarNoticesOnly;
+            CoopBarNoticesOnly = true;
+            yield return new WaitForSecondsRealtime(1.5f);
+            string paused = menu.CoopBarShown + " notice=" + Json(menu.CoopBarNotice);
+            string line = menu.CoopBarLine;
+            yield return new WaitForSecondsRealtime(4.5f);
+            string quiet = menu.CoopBarShown + " notice=" + Json(menu.CoopBarNotice);
+            CoopBarNoticesOnly = before;
+            yield return new WaitForSecondsRealtime(0.5f);
+            Log.LogInfo("co-op bot: bar notices-only paused shown=" + paused + " quiet shown=" + quiet
+                + " off shown=" + menu.CoopBarShown + " line=" + Json(line) + " role=" + Json(menu.RoleOf(true)));
         }
 
         private void CoopBotNewDay()
@@ -899,8 +919,9 @@ namespace RestoryVersus
         internal string NetError => netError;
         internal int Port => cfgPort.Value;
         internal float ResetPenaltySeconds => cfgResetPenalty.Value;
-        internal string JoinAddress { get; set; } = "127.0.0.1:27515";
+        internal string JoinAddress { get; set; } = "127.0.0.1";
         internal VersusMenu Menu => menu;
+        internal bool CoopBarNoticesOnly { get => cfgCoopBarNoticesOnly.Value; set => cfgCoopBarNoticesOnly.Value = value; }
         internal const float JoinTimeoutSeconds = 8f;
         // Steam's relays take a few seconds to find a route the first time.
         internal static float JoinTimeout(ITransport t) => t != null && t.Route == "Steam" ? 30f : JoinTimeoutSeconds;

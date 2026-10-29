@@ -17,4 +17,21 @@ namespace RestoryVersus.Core
             return hosting ? "hostFailed" : "joinFailed";
         }
     }
+
+    // The menu's address field takes the host's IP only; the port is the mod's own (Network.Port). What players
+    // paste from a tunnel or chat ("1.2.3.4:27515", " 1.2.3.4 ", "udp://1.2.3.4/") is cut down to the host.
+    public static class HostAddress
+    {
+        public static string Clean(string text)
+        {
+            var s = (text ?? "").Trim().Replace(" ", "");
+            int scheme = s.IndexOf("://", StringComparison.Ordinal);
+            if (scheme >= 0) s = s.Substring(scheme + 3);
+            int slash = s.IndexOf('/');
+            if (slash >= 0) s = s.Substring(0, slash);
+            int colon = s.IndexOf(':');
+            if (colon >= 0 && colon == s.LastIndexOf(':')) s = s.Substring(0, colon);
+            return s;
+        }
+    }
 }

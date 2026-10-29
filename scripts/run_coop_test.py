@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -397,6 +398,15 @@ def main():
     check(bh.get("hashes") and bh.get("hashes") == bg.get("hashes"), f"the customers' box and the personal box are the same on both ({bh.get('hashes')} / {bg.get('hashes')})")
     ph, pg = ch.get("pause", {}), cg.get("pause", {})
     check(pg.get("byOther", 0) >= 1 and pg.get("resumedByOther", 0) >= 1, f"the host's pause paused the guest, and resuming resumed it ({pg})")
+    # "Top bar only with notices" (guest): shown while the host is paused, hidden once it is quiet, back when off;
+    # the bar names the host with its role.
+    bar = moved(GUEST_COPY, "bar notices-only")
+    print("  info " + bar)
+    m = re.search(r'paused shown=(\w+) notice=(".*?") quiet shown=(\w+) notice=(".*?") off shown=(\w+) line=(".*?") role=(".*?")$', bar)
+    check(m is not None and m.group(1) == "True" and m.group(2) != '""', "notices only: the bar shows while the host is paused")
+    check(m is not None and (m.group(3) == "True") == (m.group(4) != '""'), "notices only: with no notice the bar hides")
+    check(m is not None and m.group(5) == "True" and json.loads(m.group(6)).endswith(json.loads(m.group(7))),
+          "the bar is back when the option is off and names the host as host")
     nh = ch.get("net", {})
     print(f"  info net host {nh} | guest {cg.get('net')}")
     check(nh.get("packets", 0) > 0 and nh.get("resent", 0) <= nh.get("packets", 1) * 0.05, "the host resent at most 5% of its datagrams")

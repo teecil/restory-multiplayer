@@ -104,7 +104,7 @@ namespace RestoryVersus
         private bool sessionPageOpen;
         private bool? leaveButtonPlaying;
         private GameObject coopRulesBox, coopSessionBox;
-        private Button coopOrdersToggle, coopCloseButton, coopLeaveButton;
+        private Button coopOrdersToggle, coopBarToggle, coopCloseButton, coopLeaveButton;
         private RectTransform coopAvatarGrid;
         private readonly Dictionary<string, Image> coopAvatarBg = new Dictionary<string, Image>();
         private GameObject coopHud;
@@ -281,8 +281,10 @@ namespace RestoryVersus
             viewResult.SetActive(view == View.Result);
             hud.SetActive(view == View.Race);
             // Also over the pause menu, where it says who paused.
-            coopHud.SetActive(view == View.CoopPlaying && Lobby.Global != null && (Lobby.InGame || CoopDayReady.ShowStatus) && !sessionPageOpen);
-            if (coopHud.activeSelf) RefreshCoopHud();
+            // With "notices only" the bar shows up only when it has something to say.
+            bool coopBar = view == View.CoopPlaying && Lobby.Global != null && (Lobby.InGame || CoopDayReady.ShowStatus) && !sessionPageOpen;
+            if (coopBar) coopBar = RefreshCoopHud() || !plugin.CoopBarNoticesOnly;
+            coopHud.SetActive(coopBar);
 
             if (view == View.Connect) RefreshConnect();
             else if (view == View.Lobby) RefreshLobby();
@@ -991,6 +993,13 @@ namespace RestoryVersus
             coopOrdersToggle = Btn(ordersRow.transform, "coop:orders", T("no"), false, () => CoopSettings.SetGuestTakesOrders(!CoopSettings.GuestTakesOrders));
             coopOrdersToggle.GetComponent<LayoutElement>().preferredWidth = 120;
             coopOrdersToggle.GetComponent<LayoutElement>().preferredHeight = 44;
+            // Each player's own choice, kept in that player's config.
+            var barRow = Row(coopSessionBox.transform, 12);
+            var barLabel = Label(barRow.transform, T("coopBarNoticesOnly"), 20, TextMain, TextAlignmentOptions.Left, false);
+            Flex(barLabel.gameObject, 1);
+            coopBarToggle = Btn(barRow.transform, "coop:bar", T("no"), false, () => plugin.CoopBarNoticesOnly = !plugin.CoopBarNoticesOnly);
+            coopBarToggle.GetComponent<LayoutElement>().preferredWidth = 120;
+            coopBarToggle.GetComponent<LayoutElement>().preferredHeight = 44;
             Label(coopSessionBox.transform, T("chooseAvatar"), 20, TextMuted, TextAlignmentOptions.Left, false);
             var gridGo = new GameObject("Grid", typeof(RectTransform));
             gridGo.transform.SetParent(coopSessionBox.transform, false);
@@ -1018,6 +1027,10 @@ namespace RestoryVersus
 
         // Test bot: the co-op page while playing, as the pause menu's sign opens it.
         public void BotSessionPage(bool open) => sessionPageOpen = open;
+        public bool CoopBarShown => coopHud != null && coopHud.activeSelf;
+        public string CoopBarLine => coopHudLine != null ? coopHudLine.text : "";
+        public string CoopBarNotice => coopHudNotice != null && coopHudNotice.gameObject.activeSelf ? coopHudNotice.text : "";
+        public string RoleOf(bool host) => " (" + T(host ? "host" : "guest") + ")";
 
         // Leaving from inside the game: the way the pause menu's "Main menu" does it.
         private void LeaveCoopFromGame()
@@ -1026,14 +1039,18 @@ namespace RestoryVersus
             plugin.StartCoroutine(VersusProfile.ExitWorkshopToMainMenu());
         }
 
+        private void ShowYesNo(Button b, bool on)
+        {
+            b.GetComponent<Image>().color = on ? Accent : CardHi;
+            var label = b.GetComponentInChildren<TextMeshProUGUI>();
+            if (label != null) { label.text = on ? T("yes") : T("no"); label.color = on ? AccentText : TextMain; }
+        }
+
         private void RefreshCoopSession(CoopSession c)
         {
-            bool host = c.IsHost;
-            bool on = CoopSettings.GuestTakesOrders;
-            coopOrdersToggle.interactable = host;
-            coopOrdersToggle.GetComponent<Image>().color = on ? Accent : CardHi;
-            var label = coopOrdersToggle.GetComponentInChildren<TextMeshProUGUI>();
-            if (label != null) { label.text = on ? T("yes") : T("no"); label.color = on ? AccentText : TextMain; }
+            coopOrdersToggle.interactable = c.IsHost;
+            ShowYesNo(coopOrdersToggle, CoopSettings.GuestTakesOrders);
+            ShowYesNo(coopBarToggle, plugin.CoopBarNoticesOnly);
             // Two new avatars per frame, as in the versus lobby.
             if (coopAvatarBg.Count < AvatarArt.Count)
             {
@@ -1123,8 +1140,10 @@ namespace RestoryVersus
             ipSection = Column(parent, "Address", 8);
             ipSection.GetComponent<LayoutElement>().flexibleHeight = 0;
             Label(ipSection.transform, T("hostAddress"), 21, TextMuted, TextAlignmentOptions.Left, false);
-            addressInput = Input(ipSection.transform, plugin.JoinAddress, "192.168.0.10:" + plugin.Port);
-            addressInput.onEndEdit.AddListener(v => plugin.JoinAddress = v);
+            // IP only: the port is the mod's own, so a pasted port cannot point the join elsewhere.
+            addressInput = Input(ipSection.transform, HostAddress.Clean(plugin.JoinAddress), "192.168.0.10");
+            addressInput.onEndEdit.AddListener(v => { plugin.JoinAddress = HostAddress.Clean(v); addressInput.SetTextWithoutNotify(plugin.JoinAddress); });
+            Label(ipSection.transform, T("ipOnly"), 18, TextMuted, TextAlignmentOptions.Left, false);
 
             var row = Row(parent, 14);
             // The same page hosts or joins a race or a co-op game, depending on the card picked before.
@@ -1138,8 +1157,9 @@ namespace RestoryVersus
             Flex(host.gameObject, 1);
             joinButton = Btn(row.transform, "join", T("joinButton"), true, () =>
             {
-                if (offlinePage == OfflinePage.CoopConnect) plugin.StartCoopJoin(addressInput.text);
-                else plugin.StartJoin(addressInput.text);
+                var ip = HostAddress.Clean(addressInput.text);
+                if (offlinePage == OfflinePage.CoopConnect) plugin.StartCoopJoin(ip);
+                else plugin.StartJoin(ip);
             });
             Flex(joinButton.gameObject, 1);
 
@@ -1397,13 +1417,15 @@ namespace RestoryVersus
             coopHud.SetActive(false);
         }
 
-        private void RefreshCoopHud()
+        // True when the bar has a notice or the link is down.
+        private bool RefreshCoopHud()
         {
             var c = plugin.Coop.Session;
-            if (c == null) return;
+            if (c == null) return false;
             bool connected = c.Connection == ConnectionState.Connected;
             string who = c.RemoteName == "" ? T("friend") : c.RemoteName;
-            coopHudLine.text = T("coopTitle") + " · " + who + (connected ? "" : "  <color=#B5524A>" + T("lost") + "</color>");
+            // The bar shows the other player: the guest on the host's screen, the host on the guest's.
+            coopHudLine.text = T("coopTitle") + " · " + who + RoleOf(!c.IsHost) + (connected ? "" : "  <color=#B5524A>" + T("lost") + "</color>");
             SetAvatar(coopHudAvatar, c.RemoteAvatar);
             string left = plugin.Coop.LeftNotice;
             string notice = left == "hostLeft" ? T("coopHostLeft").Replace("{n}", plugin.Coop.LeaveCountdown.ToString(CultureInfo.InvariantCulture))
@@ -1418,6 +1440,7 @@ namespace RestoryVersus
                 : "";
             coopHudNotice.text = notice;
             coopHudNotice.gameObject.SetActive(notice != "");
+            return notice != "" || !connected;
         }
 
         // Grid cells as wide as the columns allow, recomputed when the list's width changes.
@@ -1802,7 +1825,8 @@ namespace RestoryVersus
             { "subtitleOffline", new[] { "Race your friend to assemble the same device", "Кто быстрее соберёт одинаковое устройство" } },
             { "connectIntro", new[] { "Host a game or join a friend's.", "Создай игру или подключись к другу." } },
             { "yourName", new[] { "Your name", "Твоё имя" } },
-            { "hostAddress", new[] { "Host address (IP:port)", "Адрес хоста (IP:порт)" } },
+            { "hostAddress", new[] { "Host's IP address", "IP-адрес хоста" } },
+            { "ipOnly", new[] { "Type the IP only, without a port.", "Введите только IP, без порта." } },
             { "hostButton", new[] { "Host a game", "Создать игру" } },
             { "joinButton", new[] { "Join", "Подключиться" } },
             { "portHint", new[] { "The host shares UDP port {port} (LAN, port forwarding or a virtual LAN like ZeroTier).", "Хост открывает UDP-порт {port} (локальная сеть, проброс порта или ZeroTier / Radmin VPN)." } },
@@ -1844,7 +1868,7 @@ namespace RestoryVersus
             { "coopOrdersHost", new[] { "Only the host takes orders.", "Заказы берёт хост." } },
             { "coopHostLeft", new[] { "The host left. Back to the main menu in {n} s...", "Хост вышел. Возврат в главное меню через {n} с..." } },
             { "err_portBusy", new[] { "This port is already taken: another copy of the game may have created a game already. Close it or change the port in the mod settings (Network.Port).", "Этот порт уже занят: возможно, игру уже создала другая копия игры. Закрой её или смени порт в настройках мода (Network.Port)." } },
-            { "err_badAddress", new[] { "Could not read the address. Type it like this: 192.168.0.10:27515", "Не получилось разобрать адрес. Введи его так: 192.168.0.10:27515" } },
+            { "err_badAddress", new[] { "Could not read the address. Type the IP like this: 192.168.0.10", "Не получилось разобрать адрес. Введи IP так: 192.168.0.10" } },
             { "err_hostFailed", new[] { "Could not create the game. Restart the game and try again.", "Не получилось создать игру. Перезапусти игру и попробуй снова." } },
             { "err_joinFailed", new[] { "Could not connect. Check the address and try again.", "Не получилось подключиться. Проверь адрес и попробуй снова." } },
             { "err_modDisabled", new[] { "Online play is off: the mod does not support this version of the game yet. Update the mod.", "Сетевая игра выключена: мод пока не поддерживает эту версию игры. Обнови мод." } },
@@ -1860,12 +1884,13 @@ namespace RestoryVersus
             { "routeSteam", new[] { "Through Steam", "Через Steam" } },
             { "coopRemotePaused", new[] { "Paused: {n} is in the menu", "Пауза: {n} в меню" } },
             { "coopGuestTakesOrders", new[] { "The guest may take orders", "Гость может брать заказы" } },
+            { "coopBarNoticesOnly", new[] { "Show the top bar only when there are notices", "Показывать верхнее меню только при наличии уведомлений" } },
             { "yes", new[] { "Yes", "Да" } },
             { "no", new[] { "No", "Нет" } },
             { "close", new[] { "Close", "Закрыть" } },
             { "coopLeave", new[] { "Leave co-op", "Выйти из кооператива" } },
-            { "coopSessionHostHint", new[] { "Only you, the host, change the rules. The avatar is everyone's own.", "Правила меняет только хост (ты). Аватарку каждый выбирает себе сам." } },
-            { "coopSessionGuestHint", new[] { "The host sets the rules. Your avatar is yours to change.", "Правила задаёт хост. Аватарку можно поменять себе." } },
+            { "coopSessionHostHint", new[] { "Only you, the host, decide about orders. The top bar and the avatar everyone sets for themselves.", "Заказы разрешает только хост (ты). Верхнее меню и аватарку каждый настраивает себе сам." } },
+            { "coopSessionGuestHint", new[] { "The host decides about orders. The top bar and your avatar are yours to set.", "Заказы разрешает хост. Верхнее меню и аватарку настраиваешь себе сам." } },
             { "coopDayReady", new[] { "Ready for the next day: {n}/2", "Готовы к новому дню: {n}/2" } },
             { "coopDayReadyWait", new[] { "waiting for {name} to stamp", "ждём печать от {name}" } },
             { "coopOrderTaken", new[] { "Order taken: the courier brings the device to the shop", "Заказ взят: устройство привезёт курьер" } },

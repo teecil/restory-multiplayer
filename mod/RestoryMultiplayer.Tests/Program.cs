@@ -1348,6 +1348,14 @@ internal static class Program
         Check(Join("192.168.0.10:abc") == "badAddress", "a port that is not a number -> badAddress");
         Check(Join("no-such-host.invalid:27515") == "badAddress", "a host name that does not exist -> badAddress");
         Check(Join("127.0.0.1:99999") == "badAddress", "a port out of range -> badAddress");
+        // The menu field: the IP only, whatever is pasted around it.
+        Check(HostAddress.Clean("26.14.7.9") == "26.14.7.9", "a plain IP stays");
+        Check(HostAddress.Clean(" 26.14.7.9:27515 ") == "26.14.7.9", "a pasted port is dropped");
+        Check(HostAddress.Clean("udp://26.14.7.9:5000/") == "26.14.7.9", "a scheme and a slash are dropped");
+        Check(HostAddress.Clean("26.14. 7.9") == "26.14.7.9", "spaces inside are dropped");
+        Check(HostAddress.Clean("fe80::1") == "fe80::1", "an IPv6 address is left whole");
+        Check(HostAddress.Clean(null) == "", "nothing typed -> empty");
+        Check(Join(HostAddress.Clean("127.0.0.1:1")) == "no error", "a cleaned address joins on the mod's port");
     }
 
     private static void CoopBuildMismatch()

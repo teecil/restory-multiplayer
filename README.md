@@ -6,10 +6,12 @@ Two-player online play for **ReStory: Chill Electronics Repairs** (Mandragora / 
 - **Co-op**: a friend joins the host's save. One shared shop, one wallet, one parts stock; each player has their own
   bench.
 - **Versus**: both players get the same broken device and race to assemble it.
+- **All the game's languages**: every menu and notice of the mod is translated into all 9 languages of the game
+  (English, Russian, Spanish, French, German, Chinese, Japanese, Korean, Portuguese) and follows the language set
+  in the game.
 
 Tested with game **1.0.033r** (Steam, the Fuzzby update of 2026-10-27). Player instructions in Russian:
-[mod/dist/README_RU.txt](mod/dist/README_RU.txt). The mod follows the game's language: all 9 of the game's languages
-are covered.
+[mod/dist/README_RU.txt](mod/dist/README_RU.txt).
 
 This repository holds the mod's own code only: no game files, no saves, no decompiled game code.
 
@@ -17,10 +19,10 @@ This repository holds the mod's own code only: no game files, no saves, no decom
 
 | | |
 |---|---|
-| Co-op | works; automated two-copy test 75/75 checks |
+| Co-op | works; automated two-copy test 78/78 checks |
 | Co-op started from inside a save | works; automated test 11/11 |
 | Versus | works; automated test 70/70 (three races, rematch) |
-| Core (network, sync rules) | headless tests 235/235 |
+| Core (network, sync rules) | headless tests 242/242 |
 | Played by people | the author and a friend on two PCs over the internet, connected through Porthole (IP route): a versus match, then several co-op days with the friend as host; their logs found most of the hard bugs (devices missing on the guest, the host's upload saturated, the guest's bench device taken by the host, customer cash lost), all fixed and added to the bot tests. These sessions were on game build 1.0.015r; 1.0.033r is covered by the automated tests |
 | Connection by IP | tested (two copies on one PC, and two PCs over the internet) |
 | Connection through Steam (lobby + invite) | **not tested** with two real Steam accounts; marked as such in the game's menu |
@@ -42,6 +44,8 @@ outcome back.
 - Time follows the host. The day ends when **both** clicked the bicycle; the next day starts when **both** stamped
   the end-of-day screen. One pause for both.
 - Each player's bench is their own: what lies there is hidden from the other player.
+- The bar at the top names the other player and their role ("Name (Guest)" on the host's screen, "Name (Host)" on
+  the guest's). On the co-op page each player can choose to show it only when it has a notice.
 
 ## Install (players)
 
@@ -51,6 +55,16 @@ outcome back.
 
 Both players need the same mod version (shown on the "Online play" page). The host needs an open UDP port 27515
 (LAN, port forwarding, or a tunnel / virtual LAN: Porthole is the one tested), or both use the Steam route (not tested yet).
+The address field takes the host's IP only, without a port.
+
+### Connect through Porthole
+
+This is how the mod was played on two PCs over the internet.
+
+1. Both players join the same Porthole lobby.
+2. The host: "Online play" -> mode -> "By IP address" -> "Host a game".
+3. The friend copies the host's IP address from Porthole (or a similar tool), pastes it into the "Host's IP address"
+   field and presses "Join".
 
 ## Build
 
