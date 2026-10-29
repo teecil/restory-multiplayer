@@ -55,18 +55,19 @@ outcome back.
 2. Unzip everything into the game folder, next to `Restory.exe`, with the game closed.
 3. Start the game: the main menu has a new "Online play" sign (also in the pause menu).
 
-Both players need the same mod version (shown on the "Online play" page). The host needs an open UDP port 27515
-(LAN, port forwarding, or a tunnel / virtual LAN: Porthole is the one tested), or both use the Steam route (not tested yet).
-The address field takes the host's IP only, without a port.
+Both players need the same mod version (shown on the "Online play" page).
 
-### Connect through Porthole
+### Connect by IP (through Porthole)
 
 This is how the mod was played on two PCs over the internet.
 
-1. Both players join the same Porthole lobby.
+1. Both players join the same Porthole lobby (or a similar tool: ZeroTier, Radmin VPN).
 2. The host: "Online play" -> mode -> "By IP address" -> "Host a game".
-3. The friend copies the host's IP address from Porthole (or a similar tool), pastes it into the "Host's IP address"
-   field and presses "Join".
+3. The friend copies the host's IP address from Porthole, pastes it into the "Host's IP address" field and presses
+   "Join".
+
+On the same home network no Porthole is needed: the friend types the host's local IP (for example `192.168.0.10`).
+The Steam route (invite a Steam friend) exists too but is not tested yet.
 
 ## Build
 
