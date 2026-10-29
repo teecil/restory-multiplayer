@@ -10,8 +10,7 @@ Two-player online play for **ReStory: Chill Electronics Repairs** (Mandragora / 
   (English, Russian, Spanish, French, German, Chinese, Japanese, Korean, Portuguese) and follows the language set
   in the game.
 
-Tested with game **1.0.033r** (Steam, the Fuzzby update of 2026-10-27). Player instructions in Russian:
-[mod/dist/README_RU.txt](mod/dist/README_RU.txt).
+Tested with game **1.0.033r** (Steam, the Fuzzby update of 2026-10-27). 
 
 This repository holds the mod's own code only: no game files, no saves, no decompiled game code.
 
