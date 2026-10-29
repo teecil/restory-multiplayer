@@ -105,8 +105,10 @@ namespace RestoryVersus
         private bool? leaveButtonPlaying;
         private GameObject coopRulesBox, coopSessionBox;
         private Button coopOrdersToggle, coopBarToggle, coopCloseButton, coopLeaveButton;
+#if COOP_AVATAR_PICKER
         private RectTransform coopAvatarGrid;
         private readonly Dictionary<string, Image> coopAvatarBg = new Dictionary<string, Image>();
+#endif
         private GameObject coopHud;
         private TextMeshProUGUI coopHudLine, coopHudNotice;
         private Image coopHudAvatar;
@@ -1000,6 +1002,9 @@ namespace RestoryVersus
             coopBarToggle = Btn(barRow.transform, "coop:bar", T("no"), false, () => plugin.CoopBarNoticesOnly = !plugin.CoopBarNoticesOnly);
             coopBarToggle.GetComponent<LayoutElement>().preferredWidth = 120;
             coopBarToggle.GetComponent<LayoutElement>().preferredHeight = 44;
+#if COOP_AVATAR_PICKER
+            // The avatar picker, switched off (the co-op bar shows the link state instead); build with
+            // COOP_AVATAR_PICKER defined to bring it back.
             Label(coopSessionBox.transform, T("chooseAvatar"), 20, TextMuted, TextAlignmentOptions.Left, false);
             var gridGo = new GameObject("Grid", typeof(RectTransform));
             gridGo.transform.SetParent(coopSessionBox.transform, false);
@@ -1009,6 +1014,7 @@ namespace RestoryVersus
             ag.spacing = new Vector2(6, 6);
             ag.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             ag.constraintCount = 8;
+#endif
             coopSessionBox.SetActive(false);
 
             coopHint = Label(parent, "", 20, TextMuted, TextAlignmentOptions.Center, false);
@@ -1030,7 +1036,6 @@ namespace RestoryVersus
         public bool CoopBarShown => coopHud != null && coopHud.activeSelf;
         public string CoopBarLine => coopHudLine != null ? coopHudLine.text : "";
         public string CoopBarNotice => coopHudNotice != null && coopHudNotice.gameObject.activeSelf ? coopHudNotice.text : "";
-        public string RoleOf(bool host) => " (" + T(host ? "host" : "guest") + ")";
 
         // Leaving from inside the game: the way the pause menu's "Main menu" does it.
         private void LeaveCoopFromGame()
@@ -1051,6 +1056,7 @@ namespace RestoryVersus
             coopOrdersToggle.interactable = c.IsHost;
             ShowYesNo(coopOrdersToggle, CoopSettings.GuestTakesOrders);
             ShowYesNo(coopBarToggle, plugin.CoopBarNoticesOnly);
+#if COOP_AVATAR_PICKER
             // Two new avatars per frame, as in the versus lobby.
             if (coopAvatarBg.Count < AvatarArt.Count)
             {
@@ -1078,6 +1084,7 @@ namespace RestoryVersus
             }
             var mine = plugin.Avatar;
             foreach (var kv in coopAvatarBg) kv.Value.color = kv.Key == mine ? Accent : CardHi;
+#endif
         }
 
         private void RefreshCoopLobby()
@@ -1417,6 +1424,10 @@ namespace RestoryVersus
             coopHud.SetActive(false);
         }
 
+        // AvatarArt's green and red robots.
+        internal const string LinkedRobot = "robot-1", LostRobot = "robot-3";
+        public string CoopBarAvatar => coopHudAvatar == null ? "" : coopHudAvatar.sprite == AvatarArt.Get(LinkedRobot) ? "linked" : coopHudAvatar.sprite == AvatarArt.Get(LostRobot) ? "lost" : "";
+
         // True when the bar has a notice or the link is down.
         private bool RefreshCoopHud()
         {
@@ -1424,10 +1435,13 @@ namespace RestoryVersus
             if (c == null) return false;
             bool connected = c.Connection == ConnectionState.Connected;
             string who = c.RemoteName == "" ? T("friend") : c.RemoteName;
-            // The bar shows the other player: the guest on the host's screen, the host on the guest's.
-            coopHudLine.text = T("coopTitle") + " · " + who + RoleOf(!c.IsHost) + (connected ? "" : "  <color=#B5524A>" + T("lost") + "</color>");
-            SetAvatar(coopHudAvatar, c.RemoteAvatar);
             string left = plugin.Coop.LeftNotice;
+            // Who this copy is connected to; the robot is green while the other player is there, red once the
+            // link is lost or they left.
+            bool linked = connected && left != "guestLeft" && left != "hostLeft";
+            coopHudLine.text = T(c.IsHost ? "coopBarHostLine" : "coopBarGuestLine").Replace("{n}", who)
+                + (connected ? "" : "  <color=#B5524A>" + T("lost") + "</color>");
+            SetAvatar(coopHudAvatar, linked ? LinkedRobot : LostRobot);
             string notice = left == "hostLeft" ? T("coopHostLeft").Replace("{n}", plugin.Coop.LeaveCountdown.ToString(CultureInfo.InvariantCulture))
                 : CoopDayReady.Status(T, who) is var ready && ready != "" ? ready
                 : CoopDayReady.BikeStatus(T, who) is var bike && bike != "" ? bike
@@ -1889,8 +1903,10 @@ namespace RestoryVersus
             { "no", new[] { "No", "Нет" } },
             { "close", new[] { "Close", "Закрыть" } },
             { "coopLeave", new[] { "Leave co-op", "Выйти из кооператива" } },
-            { "coopSessionHostHint", new[] { "Only you, the host, decide about orders. The top bar and the avatar everyone sets for themselves.", "Заказы разрешает только хост (ты). Верхнее меню и аватарку каждый настраивает себе сам." } },
-            { "coopSessionGuestHint", new[] { "The host decides about orders. The top bar and your avatar are yours to set.", "Заказы разрешает хост. Верхнее меню и аватарку настраиваешь себе сам." } },
+            { "coopSessionHostHint", new[] { "Only you, the host, decide about orders. The top bar everyone sets for themselves.", "Заказы разрешает только хост (ты). Верхнее меню каждый настраивает себе сам." } },
+            { "coopSessionGuestHint", new[] { "The host decides about orders. The top bar is yours to set.", "Заказы разрешает хост. Верхнее меню настраиваешь себе сам." } },
+            { "coopBarHostLine", new[] { "{n} is connected to you", "К вам подключен {n}" } },
+            { "coopBarGuestLine", new[] { "You are connected to {n}", "Вы подключены к {n}" } },
             { "coopDayReady", new[] { "Ready for the next day: {n}/2", "Готовы к новому дню: {n}/2" } },
             { "coopDayReadyWait", new[] { "waiting for {name} to stamp", "ждём печать от {name}" } },
             { "coopOrderTaken", new[] { "Order taken: the courier brings the device to the shop", "Заказ взят: устройство привезёт курьер" } },

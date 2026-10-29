@@ -1,4 +1,4 @@
-"""Builds the mod-only package for players: BepInEx 5.4.23.5 + RestoryVersus.dll + README.
+"""Builds the mod-only package for players: BepInEx 5.4.23.5 + RestoryVersus.dll (instructions: README.ru.md and README.md in the repository).
 No game files and no saves (the versus workshop is made from the player's own save). Usage:
 python -I local/scripts/make_dist.py
 Prints the file list, refuses if anything that looks like a game file or a save slipped in, and prints the SHA-256."""
@@ -30,7 +30,6 @@ def main():
                 full = os.path.join(root, f)
                 z.write(full, os.path.relpath(full, bep).replace(os.sep, "/"))
         z.write(dll, "BepInEx/plugins/RestoryVersus/RestoryVersus.dll")
-        z.write(os.path.join(LOCAL, "mod", "dist", "README_RU.txt"), "README_RU.txt")
 
     with zipfile.ZipFile(out) as z:
         names = z.namelist()

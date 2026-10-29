@@ -1,5 +1,7 @@
 # ReStory Multiplayer
 
+**English** | [Русский](README.ru.md)
+
 Two-player online play for **ReStory: Chill Electronics Repairs** (Mandragora / tinyBuild, Steam app 3812600), as a
 [BepInEx 5](https://github.com/BepInEx/BepInEx) plugin:
 
@@ -43,8 +45,9 @@ outcome back.
 - Time follows the host. The day ends when **both** clicked the bicycle; the next day starts when **both** stamped
   the end-of-day screen. One pause for both.
 - Each player's bench is their own: what lies there is hidden from the other player.
-- The bar at the top names the other player and their role ("Name (Guest)" on the host's screen, "Name (Host)" on
-  the guest's). On the co-op page each player can choose to show it only when it has a notice.
+- The bar at the top says who is connected: "Name is connected to you" on the host's screen, "You are connected to
+  Name" on the guest's. Its robot is green while the other player is there and red once the link is lost or they
+  left. On the co-op page each player can choose to show the bar only when it has a notice.
 
 ## Install (players)
 
@@ -75,7 +78,7 @@ dotnet build mod/RestoryVersus.Plugin -c Release -p:GameDir="<game dir>"
 ```
 
 The plugin compiles against the game's own `Restory_Data/Managed` assemblies. `python -I scripts/make_dist.py`
-packs BepInEx, the plugin and the Russian README into `mod/dist/RestoryVersus-<version>.zip` and refuses if a game
+packs BepInEx and the plugin into `mod/dist/RestoryVersus-<version>.zip` and refuses if a game
 file or a save slips in.
 
 ## Tests
@@ -96,6 +99,8 @@ file or a save slips in.
   save, where that device is still in the room.
 - Moving the customers' box or the personal box away from its spot is not shared (rare).
 - When the host's mail changes while the guest has the mail app open, the guest's list is rebuilt.
+- Versus on 1.0.033r: the race device can have a different case colour on each player's screen (the game now picks
+  a random colour for contest devices, and each copy picks its own). Parts and rules are the same.
 - The new devices of 1.0.033r (Fuzzby, PlayMachine controller) were not part of the automated tests.
 - Two players only.
 

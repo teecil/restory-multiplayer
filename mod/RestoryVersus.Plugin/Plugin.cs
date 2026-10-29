@@ -32,7 +32,7 @@ namespace RestoryVersus
     public sealed class Plugin : BaseUnityPlugin
     {
         public const string Guid = "coopanything.restory.versus";
-        public const string Version = "0.13.2";
+        public const string Version = "0.13.3";
 
         internal static ManualLogSource Log;
         internal static Plugin Instance { get; private set; }
@@ -741,7 +741,7 @@ namespace RestoryVersus
         }
 
         // Test bot (guest): "top bar only with notices" on; the bar must show while the host is paused (a notice)
-        // and hide once the pause is over; the bar names the other player with its role.
+        // and hide once the pause is over; the bar says whom the guest is connected to, with the green robot.
         private System.Collections.IEnumerator BotCoopBar()
         {
             bool before = CoopBarNoticesOnly;
@@ -754,7 +754,7 @@ namespace RestoryVersus
             CoopBarNoticesOnly = before;
             yield return new WaitForSecondsRealtime(0.5f);
             Log.LogInfo("co-op bot: bar notices-only paused shown=" + paused + " quiet shown=" + quiet
-                + " off shown=" + menu.CoopBarShown + " line=" + Json(line) + " role=" + Json(menu.RoleOf(true)));
+                + " off shown=" + menu.CoopBarShown + " line=" + Json(line) + " robot=" + menu.CoopBarAvatar);
         }
 
         private void CoopBotNewDay()
