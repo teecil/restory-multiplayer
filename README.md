@@ -21,7 +21,7 @@ This repository holds the mod's own code only: no game files, no saves, no decom
 | Co-op started from inside a save | works; automated test 11/11 |
 | Versus | works; automated test 70/70 (three races, rematch) |
 | Core (network, sync rules) | headless tests 235/235 |
-| Played by people | the author and a friend on two PCs over the internet (VPN, IP route): a versus match, then several co-op days with the friend as host; their logs found most of the hard bugs (devices missing on the guest, the host's upload saturated, the guest's bench device taken by the host, customer cash lost), all fixed and added to the bot tests. These sessions were on game build 1.0.015r; 1.0.033r is covered by the automated tests |
+| Played by people | the author and a friend on two PCs over the internet, connected through Porthole (IP route): a versus match, then several co-op days with the friend as host; their logs found most of the hard bugs (devices missing on the guest, the host's upload saturated, the guest's bench device taken by the host, customer cash lost), all fixed and added to the bot tests. These sessions were on game build 1.0.015r; 1.0.033r is covered by the automated tests |
 | Connection by IP | tested (two copies on one PC, and two PCs over the internet) |
 | Connection through Steam (lobby + invite) | **not tested** with two real Steam accounts; marked as such in the game's menu |
 
@@ -50,7 +50,7 @@ outcome back.
 3. Start the game: the main menu has a new "Online play" sign (also in the pause menu).
 
 Both players need the same mod version (shown on the "Online play" page). The host needs an open UDP port 27515
-(LAN, port forwarding, or a virtual LAN like ZeroTier), or both use the Steam route (not tested yet).
+(LAN, port forwarding, or a tunnel / virtual LAN: Porthole is the one tested), or both use the Steam route (not tested yet).
 
 ## Build
 
