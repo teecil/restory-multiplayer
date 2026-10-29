@@ -1,0 +1,14 @@
+# Build output
+bin/
+obj/
+__pycache__/
+
+# Never in the repository: game files, saves, logs, downloads, packages
+test-installs/
+test_saves/
+logs/
+downloads/
+backup/
+decomp/
+mod/dist/*.zip
+*.restory
