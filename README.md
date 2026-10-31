@@ -104,6 +104,7 @@ file or a save slips in.
   a random colour for contest devices, and each copy picks its own). Parts and rules are the same.
 - The new devices of 1.0.033r (Fuzzby, PlayMachine controller) were not part of the automated tests.
 - Two players only.
+- The guest cannot see incoming NPCs including the courier and quest givers. This is a deliberate decision to make sync easier. It may be changed in the future.
 
 ## Credits
 
